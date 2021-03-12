@@ -12,9 +12,9 @@ exports.addProductIntoCart = (req, res) => {
     if (req.user.role != strings.clientRole) return res.status(500).send({ mensaje: strings.onlyClientBill });
     productModel.findById(productId).exec((err, findProduct) => {
         if (err) return res.status(500).send({ mensaje: strings.requestError });
-        if (findProduct.amount < params.amount) return res.status(500).send({ mensaje: strings.insuficientProducts });
+        if (findProduct.stock < params.amount) return res.status(500).send({ mensaje: strings.insuficientProducts });
         if (!findProduct) return res.status(500).send({ mensaje: strings.searchProductError });
-        if (findProduct.amount == 0) return res.status(500).send({ mensaje: strings.emptyProduct });
+        if (findProduct.stock == 0) return res.status(500).send({ mensaje: strings.emptyProduct });
 
         var intAmount = parseInt(params.amount, 10);
         var initialSubTotal = intAmount * findProduct.price;
@@ -45,18 +45,16 @@ exports.addProductIntoCart = (req, res) => {
                     var productIdArray = productArray[step].productId;
 
                     if (req.params.productId == productIdArray) {
-                        productArray.forEach(function (element) {
-                            if (element.productId == productId) {
-                                cartModel.findOneAndUpdate({ userOwner: req.user.sub, "productList.productId": productId },
-                                    { "productList.$.amount": intAmount + amountArray, "productList.$.subTotal": subTotalArray + initialSubTotal }, (err, addedProduct) => {
-                                        if (err) return res.status(500).send({ mensaje: strings.requestError });
-                                        if (!addedProduct) return res.status(500).send({ mensaje: strings.addDataError });
-                                        var total = parseInt(addedProduct.total, 10);
-                                        var intParam = parseInt(params.amount, 10);
-                                        cartModel.findOneAndUpdate({ userOwner: req.user.sub, "productList.productId": productId }, { total: total + (price * intParam) }, { new: true }, (err, updatedCart) => { return res.status(200).send({ updatedCart }); })
-                                    })
-                            }
-                        })
+                        var totalAmount = amountArray + intAmount;
+                        if (totalAmount > findProduct.stock) return res.status(500).send({ mensaje: strings.insuficientProducts });
+                        cartModel.findOneAndUpdate({ userOwner: req.user.sub, "productList.productId": productId },
+                            { "productList.$.amount": intAmount + amountArray, "productList.$.subTotal": subTotalArray + initialSubTotal }, (err, addedProduct) => {
+                                if (err) return res.status(500).send({ mensaje: strings.requestError });
+                                if (!addedProduct) return res.status(500).send({ mensaje: strings.addDataError });
+                                var total = parseInt(addedProduct.total, 10);
+                                var intParam = parseInt(params.amount, 10);
+                                cartModel.findOneAndUpdate({ userOwner: req.user.sub, "productList.productId": productId }, { total: total + (price * intParam) }, { new: true }, (err, updatedCart) => { return res.status(200).send({ updatedCart }); })
+                            })
                     } else {
                         console.log(strings.consultError);
                     }

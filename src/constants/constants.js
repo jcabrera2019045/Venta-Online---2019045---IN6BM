@@ -59,5 +59,8 @@ module.exports = Object.freeze({
     searchProductError: 'Error al buscar producto',
     emptyProduct: 'No hay existencias',
 
-
+    // Bill controller texts
+    emptyCart: 'No posee ningun producto en su carrito',
+    addBillError: 'No se ha podido agregar la factura',
+    notFindedCart: 'No se ha podido encontrar el carrito',
 })

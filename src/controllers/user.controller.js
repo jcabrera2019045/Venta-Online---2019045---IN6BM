@@ -5,6 +5,8 @@ const bcrypt = require("bcrypt-nodejs");
 const jwt = require('../services/jwt')
 const strings = require('../constants/constants');
 const cartModel = require('../models/shopping_cart.model');
+const productModel = require('../models/product.model');
+const billModel = require('../models/bill.model')
 
 exports.createCart = (userId) => {
     var cart = new cartModel();
@@ -58,12 +60,17 @@ exports.login = (req, res) => {
             bcrypt.compare(params.password, findUser.password, (_err, successfulPass) => {
                 if (successfulPass) {
                     if (params.getToken === 'true') {
-                        return res.status(200).send({
-                            token: jwt.createToken(findUser)
-                        });
+                        billModel.find({ $or: [{ userOwner: findUser._id }] }).exec((err, findBill) => {
+                            if (err) return res.status(500).send({ mensaje: strings.requestError });
+                            if (!findBill) return res.status(500).send({ mensaje: strings.consultError });
+                            return res.status(200).send({
+                                'Token': jwt.createToken(findUser),
+                                'Compras Realizadas': findBill,
+                            })
+                        })
                     } else {
                         findUser.password = undefined;
-                        return res.status(200).send({ findUser })
+                        return res.status(200).send(findUser);
                     }
                 } else {
                     return res.status(404).send({ mensaje: strings.cantIdentifyUser })
@@ -259,4 +266,16 @@ exports.getUsers = (req, res) => {
         if (!findUser) return res.status(500).send({ mensaje: strings.consultError })
         return res.status(200).send({ findUser })
     })
+}
+
+exports.getMostSellProductsClient = (req, res) => {
+    if (req.user.role != strings.clientRole) {
+        return res.status(500).send({ mensaje: strings.permissionsError });
+    }
+
+    productModel.find((err, findProduct) => {
+        if (err) return res.status(500).send({ mensaje: strings.requestError })
+        if (!findProduct) return res.status(500).send({ mensaje: strings.consultError })
+        return res.status(200).send({ 'Catalogo de Productos más Vendidos': findProduct })
+    }).sort({ soldUnits: -1 });
 }

@@ -8,6 +8,7 @@ var md_authentication = require("../middlewares/authenticated")
 var api = express.Router();
 
 api.get('/getUsers', md_authentication.ensureAuth, userController.getUsers);
+api.get('/getMostSellProductsClient', md_authentication.ensureAuth, userController.getMostSellProductsClient)
 api.post('/login', userController.login);
 api.post('/clientRegistration', userController.clientRegistration);
 api.post('/adminRegistration', md_authentication.ensureAuth, userController.adminRegistration);

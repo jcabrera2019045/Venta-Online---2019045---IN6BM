@@ -14,6 +14,7 @@ exports.addProduct = (req, res) => {
             product.price = params.price;
             product.stock = params.stock;
             product.category = productId;
+            product.soldUnits = 0;
 
             productModel.find({
                 $or: [{ name: product.name }]
